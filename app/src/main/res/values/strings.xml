@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Bus62 Unofficial</string>
+    <string name="title_home">Остановки</string>
+    <string name="title_dashboard">Избранное</string>
+    <string name="title_notifications">Подписки</string>
+    <string name="app_name_rus">Транспорт Рязани</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="search">Search</string>
+    <string name="SearchHint">Поиск</string>
+</resources>
