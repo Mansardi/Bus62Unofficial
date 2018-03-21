@@ -1,7 +1,6 @@
 package transport.client.bus62unofficial
 
 import android.app.Fragment
-import android.net.Uri
 import android.os.Bundle
 import android.support.design.widget.BottomNavigationView
 import android.support.v7.app.AppCompatActivity
@@ -9,33 +8,68 @@ import kotlinx.android.synthetic.main.activity_main.*
 import android.support.v4.view.MenuItemCompat
 import android.support.v7.widget.SearchView
 import android.view.Menu
+import transport.client.bus62unofficial.common.Searchable
+import transport.client.bus62unofficial.forecasts.ForecastFragment
+import transport.client.bus62unofficial.stations.StationsFragment
 
 class MainActivity : AppCompatActivity(), StationsFragment.OnFragmentInteractionListener {
 
-    override fun onFragmentInteraction(uri: Uri) {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        if (savedInstanceState == null) {
+            val transaction = fragmentManager.beginTransaction()
+            transaction.replace(R.id.frame_layout, StationsFragment(), R.id.navigation_home.toString())
+            transaction.commit()
+        }
+
+        //actionBar.setDisplayHomeAsUpEnabled(true);
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
+    }
+
+    override fun onStationSelected(stationId: String) {
+        var forecastFragment = fragmentManager.findFragmentById(R.id.forecastsList) as ForecastFragment?
+        if (forecastFragment != null) {
+            forecastFragment.updateForecastView(stationId)
+        } else {
+            forecastFragment = ForecastFragment()
+            val args = Bundle()
+            args.putString(ForecastFragment.STATION_ID, stationId)
+            forecastFragment.arguments = args
+
+            val transaction = fragmentManager.beginTransaction()
+            transaction.replace(R.id.frame_layout, forecastFragment)
+            transaction.addToBackStack(null)
+            transaction.commit()
+        }
     }
 
     private val mOnNavigationItemSelectedListener = BottomNavigationView.OnNavigationItemSelectedListener { item ->
         var stationsFragment: Fragment? = null
         val tag = item.itemId.toString()
+        val transaction = fragmentManager.beginTransaction()
 
         when (item.itemId) {
             R.id.navigation_home -> {
                 stationsFragment = fragmentManager.findFragmentByTag(tag)
                 if (stationsFragment == null) {
                     stationsFragment = StationsFragment()
+                    transaction.add(R.id.frame_layout, stationsFragment, tag)
                 }
             }
             R.id.navigation_favorites -> {
                 stationsFragment = fragmentManager.findFragmentByTag(tag)
                 if (stationsFragment == null) {
                     stationsFragment = StationsFragment()
+                    transaction.add(R.id.frame_layout, stationsFragment, tag)
                 }
             }
             R.id.navigation_notifications -> {
                 stationsFragment = fragmentManager.findFragmentByTag(tag)
                 if (stationsFragment == null) {
                     stationsFragment = StationsFragment()
+                    transaction.add(R.id.frame_layout, stationsFragment, tag)
                 }
             }
         }
@@ -43,21 +77,10 @@ class MainActivity : AppCompatActivity(), StationsFragment.OnFragmentInteraction
         if (stationsFragment == null)
             return@OnNavigationItemSelectedListener false
 
-        val transaction = fragmentManager.beginTransaction()
-        transaction.replace(R.id.frame_layout, stationsFragment, tag)
+
+        transaction.show(stationsFragment)
         transaction.commit()
         return@OnNavigationItemSelectedListener true
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
-
-        val transaction = fragmentManager.beginTransaction()
-        transaction.replace(R.id.frame_layout, StationsFragment(),  R.id.navigation_home.toString())
-        transaction.commit()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

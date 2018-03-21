@@ -1,0 +1,138 @@
+package transport.client.bus62unofficial.stations
+
+import android.app.Activity
+import android.app.Fragment
+import android.content.Context
+import android.os.Bundle
+import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import kotlinx.android.synthetic.main.fragment_stations.*
+import org.json.JSONArray
+import transport.client.bus62unofficial.common.Constants
+import transport.client.bus62unofficial.R
+import transport.client.bus62unofficial.common.RecyclerItemClickListener
+import transport.client.bus62unofficial.common.Searchable
+import transport.client.bus62unofficial.utils.Utils
+
+
+class StationsFragment : Fragment(), Searchable {
+
+    private var stations: ArrayList<HashMap<String, String>> = ArrayList()
+
+    private lateinit var filteredStations: ArrayList<HashMap<String, String>>
+    private lateinit var listLoader: StationsListLoader
+
+    private var mListener: OnFragmentInteractionListener? = null
+
+    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        loadStations()
+
+        return inflater!!.inflate(R.layout.fragment_stations, container, false)
+    }
+
+    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        listLoader = object : StationsListLoader(activity, list) {
+            override fun onLoadItems(items: java.util.ArrayList<HashMap<String, String>>, itemsPerPage: Int) {
+                val length = if (items.count() + itemsPerPage > stations.count()) stations.count() else items.count() + itemsPerPage
+                for (i in items.count() until length) {
+                    items.add(stations[i])
+                }
+            }
+        }
+
+        list.affectOnItemClick(object : RecyclerItemClickListener.OnClickListener {
+            override fun onItemClick(position: Int, view: View) {
+                mListener!!.onStationSelected(stations[position].get("id").toString())
+            }
+        })
+
+        listLoader.setItemsPerPage(50)
+        list.adapter = listLoader.createAdapter()
+        list.layoutManager = LinearLayoutManager(activity.applicationContext)
+        listLoader.loadItems()
+    }
+
+    override fun applyFilter(filter: String) {
+        val adapter: StationsAdapter?
+        if (filter.isEmpty()) {
+            adapter = StationsAdapter(activity, stations)
+        } else {
+            filteredStations = ArrayList()
+            for (s in stations) {
+                if (s.get("name").toString().toLowerCase().contains(filter))
+                    filteredStations.add(s)
+            }
+
+            adapter = StationsAdapter(activity, filteredStations)
+        }
+        list.adapter = adapter
+    }
+
+
+    // TODO: Rename method, update argument and hook method into UI event
+//    fun onButtonPressed(uri: Uri) {
+//        if (mListener != null) {
+//            mListener!!.onFragmentInteraction(uri)
+//        }
+//    }
+
+    override fun onAttach(context: Context?) {
+        super.onAttach(context)
+        if (context is OnFragmentInteractionListener) {
+            mListener = context
+        } else {
+            throw RuntimeException(context!!.toString() + " must implement OnFragmentInteractionListener")
+        }
+    }
+
+    override fun onAttach(context: Activity?) {
+        super.onAttach(context)
+        if (context is OnFragmentInteractionListener) {
+            mListener = context
+        } else {
+            throw RuntimeException(context!!.toString() + " must implement OnFragmentInteractionListener")
+        }
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        mListener = null
+    }
+
+    private fun loadStations() {
+        val response = Utils.sendGet(Constants.Requests.STATIONS)
+        if (response.isEmpty()) return
+
+        val jsonArray = JSONArray(response)
+
+        for (i in 0..jsonArray.length() - 1) {
+            val o = jsonArray.getJSONObject(i)
+            val map = HashMap<String, String>()
+            map.put("id", o["id"].toString())
+            map.put("name", o["name"].toString())
+            map.put("descr", o["descr"].toString())
+            stations.add(map)
+        }
+    }
+
+    interface OnFragmentInteractionListener {
+        fun onStationSelected(stationId: String)
+    }
+
+    fun RecyclerView.affectOnItemClick(listener: RecyclerItemClickListener.OnClickListener) {
+        this.addOnChildAttachStateChangeListener(RecyclerItemClickListener(this, listener, null))
+    }
+
+    fun RecyclerView.affectOnLongItemClick(listener: RecyclerItemClickListener.OnLongClickListener) {
+        this.addOnChildAttachStateChangeListener(RecyclerItemClickListener(this, null, listener))
+    }
+
+    fun RecyclerView.affectOnItemClicks(onClick: RecyclerItemClickListener.OnClickListener, onLongClick: RecyclerItemClickListener.OnLongClickListener) {
+        this.addOnChildAttachStateChangeListener(RecyclerItemClickListener(this, onClick, onLongClick))
+    }
+}
