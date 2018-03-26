@@ -27,7 +27,7 @@ class LazyAdapterOld(a: Activity, var data : ArrayList<HashMap<String, String>>)
         var vi : View? = p1
 
         if(p1==null)
-            vi = inflater.inflate(R.layout.list_row, null)
+            vi = inflater.inflate(R.layout.stations_row, null)
 
         var station: HashMap<String, String> = data.get(p0)
 

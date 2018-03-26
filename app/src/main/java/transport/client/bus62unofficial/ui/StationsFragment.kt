@@ -1,9 +1,10 @@
-package transport.client.bus62unofficial.stations
+package transport.client.bus62unofficial.ui
 
 import android.app.Activity
 import android.app.Fragment
 import android.content.Context
 import android.os.Bundle
+import android.support.v7.widget.DefaultItemAnimator
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
@@ -16,70 +17,72 @@ import transport.client.bus62unofficial.R
 import transport.client.bus62unofficial.common.RecyclerItemClickListener
 import transport.client.bus62unofficial.common.Searchable
 import transport.client.bus62unofficial.utils.Utils
+import transport.client.bus62unofficial.ui.components.StationsListLoader
 
 
 class StationsFragment : Fragment(), Searchable {
-
     private var stations: ArrayList<HashMap<String, String>> = ArrayList()
+    private var loadedIndices: ArrayList<Int> = ArrayList()
 
-    private lateinit var filteredStations: ArrayList<HashMap<String, String>>
+    private var searching: Boolean = false
+    private var searchString: String = ""
+
     private lateinit var listLoader: StationsListLoader
-
     private var mListener: OnFragmentInteractionListener? = null
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        loadStations()
 
+    init {
+        loadStations()
+    }
+
+    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater!!.inflate(R.layout.fragment_stations, container, false)
     }
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        listLoader = object : StationsListLoader(activity, list) {
-            override fun onLoadItems(items: java.util.ArrayList<HashMap<String, String>>, itemsPerPage: Int) {
-                val length = if (items.count() + itemsPerPage > stations.count()) stations.count() else items.count() + itemsPerPage
-                for (i in items.count() until length) {
-                    items.add(stations[i])
-                }
-            }
-        }
 
         list.affectOnItemClick(object : RecyclerItemClickListener.OnClickListener {
             override fun onItemClick(position: Int, view: View) {
                 mListener!!.onStationSelected(stations[position].get("id").toString())
             }
         })
-
-        listLoader.setItemsPerPage(50)
         list.adapter = listLoader.createAdapter()
+        list.itemAnimator = DefaultItemAnimator()
         list.layoutManager = LinearLayoutManager(activity.applicationContext)
-        listLoader.loadItems()
+        list.setOnScrollListener(listLoader.scrollListener)
+        listLoader.startLoadItems()
     }
 
     override fun applyFilter(filter: String) {
-        val adapter: StationsAdapter?
+        val adapter: RecyclerView.Adapter<*>?
+
         if (filter.isEmpty()) {
-            adapter = StationsAdapter(activity, stations)
+            if (!searching) return;
+
+            listLoader.setItems(getLoadedList())
+            adapter = listLoader.createAdapter()
+            searching = false
         } else {
-            filteredStations = ArrayList()
+            if (!searching) {
+                loadedIndices = listLoader.getIndices()
+            }
+
+            val filteredStations = ArrayList<HashMap<String, String>>()
             for (s in stations) {
-                if (s.get("name").toString().toLowerCase().contains(filter))
+                if (s["name"].toString().toLowerCase().trim().contains(filter))
                     filteredStations.add(s)
             }
 
-            adapter = StationsAdapter(activity, filteredStations)
-        }
-        list.adapter = adapter
+            listLoader.setItems(filteredStations)
+            adapter = listLoader.createAdapter()
+            searching = true
     }
 
-
-    // TODO: Rename method, update argument and hook method into UI event
-//    fun onButtonPressed(uri: Uri) {
-//        if (mListener != null) {
-//            mListener!!.onFragmentInteraction(uri)
-//        }
-//    }
+        searchString = filter
+        list.adapter = adapter
+    }
 
     override fun onAttach(context: Context?) {
         super.onAttach(context)
@@ -88,6 +91,8 @@ class StationsFragment : Fragment(), Searchable {
         } else {
             throw RuntimeException(context!!.toString() + " must implement OnFragmentInteractionListener")
         }
+
+        startInit()
     }
 
     override fun onAttach(context: Activity?) {
@@ -97,6 +102,33 @@ class StationsFragment : Fragment(), Searchable {
         } else {
             throw RuntimeException(context!!.toString() + " must implement OnFragmentInteractionListener")
         }
+
+        startInit()
+    }
+
+    private fun startInit() {
+        listLoader = object : StationsListLoader(activity) {
+            override fun onLoadItems(items: java.util.ArrayList<HashMap<String, String>>, itemsPerPage: Int) {
+                if (searching) return
+
+                val length = if (items.count() + itemsPerPage > stations.count()) stations.count() else items.count() + itemsPerPage
+                for (i in items.count() until length) {
+                    items.add(stations[i])
+                }
+            }
+        }
+
+        listLoader.setItemsPerPage(50)
+    }
+
+    private fun getLoadedList(): ArrayList<HashMap<String, String>> {
+        val temp = ArrayList<HashMap<String,String>>()
+        for (s in loadedIndices)
+        {
+            temp.add(stations[s])
+        }
+
+        return temp
     }
 
     override fun onDetach() {
@@ -110,6 +142,7 @@ class StationsFragment : Fragment(), Searchable {
 
         val jsonArray = JSONArray(response)
 
+        stations.clear()
         for (i in 0..jsonArray.length() - 1) {
             val o = jsonArray.getJSONObject(i)
             val map = HashMap<String, String>()

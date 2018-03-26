@@ -1,4 +1,4 @@
-package transport.client.bus62unofficial.stations
+package transport.client.bus62unofficial.ui.adapters
 
 import android.app.Activity
 import android.content.Context
@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import transport.client.bus62unofficial.R
 import transport.client.bus62unofficial.database.DBHelper
+import transport.client.bus62unofficial.ui.components.StationsViewHolder
 import java.util.*
 
 class StationsAdapter(activity: Activity, var data : ArrayList<HashMap<String, String>>) : RecyclerView.Adapter<StationsViewHolder>()  {
@@ -44,7 +45,7 @@ class StationsAdapter(activity: Activity, var data : ArrayList<HashMap<String, S
     }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): StationsViewHolder {
-        val v = LayoutInflater.from(parent!!.context).inflate(R.layout.list_row, parent, false)
+        val v = LayoutInflater.from(parent!!.context).inflate(R.layout.stations_row, parent, false)
         return StationsViewHolder(v)
     }
 

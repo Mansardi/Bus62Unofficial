@@ -1,4 +1,4 @@
-package transport.client.bus62unofficial.forecasts
+package transport.client.bus62unofficial.ui
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -6,6 +6,7 @@ import android.app.Fragment
 import android.content.Context
 import android.os.AsyncTask
 import android.os.Bundle
+import android.support.v7.widget.DividerItemDecoration
 import android.support.v7.widget.LinearLayoutManager
 import android.view.LayoutInflater
 import android.view.View
@@ -16,11 +17,15 @@ import kotlinx.android.synthetic.main.fragment_forecasts.*
 import org.json.JSONArray
 import transport.client.bus62unofficial.R
 import transport.client.bus62unofficial.common.Constants
-import transport.client.bus62unofficial.stations.StationsFragment
+import transport.client.bus62unofficial.common.Searchable
+import transport.client.bus62unofficial.ui.adapters.ForecastAdapter
 import transport.client.bus62unofficial.utils.Utils
 
 
-class ForecastFragment : Fragment() {
+class ForecastFragment : Fragment(), Searchable {
+    override fun applyFilter(filter: String) {
+
+    }
 
     private var forecasts: ArrayList<HashMap<String, String>> = ArrayList()
     private var mListener: StationsFragment.OnFragmentInteractionListener? = null
@@ -41,6 +46,7 @@ class ForecastFragment : Fragment() {
 
         forecastsList.adapter = ForecastAdapter(activity, forecasts)
         forecastsList.layoutManager = LinearLayoutManager(activity.applicationContext)
+        forecastsList.addItemDecoration(DividerItemDecoration(activity, LinearLayoutManager.VERTICAL));
 
         swipeRefresh.setOnRefreshListener { initiateRefresh() }
     }
@@ -59,8 +65,6 @@ class ForecastFragment : Fragment() {
             updateForecastView(currentStationId)
         }
     }
-
-
 
     fun updateForecastView(stationId: String) {
         currentStationId = stationId
@@ -95,8 +99,8 @@ class ForecastFragment : Fragment() {
 
 
     private fun loadForecast() {
-        var uri = Constants.Requests.STATION_FORECAST.format(currentStationId)
-        val response = Utils.sendGet(uri)
+        val url = Constants.Requests.STATION_FORECAST.format(currentStationId)
+        val response = Utils.sendGet(url)
         if (response.isEmpty()) return
 
         forecasts.clear()
@@ -105,10 +109,10 @@ class ForecastFragment : Fragment() {
         for (i in 0..jsonArray.length() - 1) {
             val o = jsonArray.getJSONObject(i)
             val map = HashMap<String, String>()
-            map.put("arrt", o["arrt"].toString())
-            map.put("rtype", o["rtype"].toString())
-            map.put("rnum", o["rnum"].toString())
-            map.put("lastst", o["lastst"].toString())
+            map["arrt"] = o["arrt"].toString()
+            map["rtype"] = o["rtype"].toString()
+            map["rnum"] = o["rnum"].toString()
+            map["lastst"] = o["lastst"].toString()
             forecasts.add(map)
         }
     }
@@ -120,11 +124,11 @@ class ForecastFragment : Fragment() {
     }
 
     private fun onRefreshComplete(result: Boolean) {
+        if (swipeRefresh == null) return
+
         swipeRefresh.isRefreshing = false
         isRefreshed = false
         if (!result) {
-//                val refreshError = EventData(Event.REFRESH_ERROR, null)
-//                listener.handleEvent(refreshError)
             val toast = Toast.makeText(activity, Constants.HTTP_ERROR, Toast.LENGTH_SHORT)
             toast.show()
         }
@@ -143,12 +147,6 @@ class ForecastFragment : Fragment() {
             loadForecast()
 
             setIsRefreshed(true)
-
-//            try {
-//                Thread.sleep(Constants.TASK_TICK)
-//            } catch (e: InterruptedException) {
-//                e.printStackTrace()
-//            }
 
             return true
         }

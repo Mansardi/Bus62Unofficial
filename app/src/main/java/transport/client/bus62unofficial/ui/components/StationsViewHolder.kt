@@ -1,4 +1,4 @@
-package transport.client.bus62unofficial.stations
+package transport.client.bus62unofficial.ui.components
 
 import android.support.v7.widget.RecyclerView
 import android.view.View
@@ -13,22 +13,11 @@ class StationsViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     var descr: TextView = itemView.findViewById(R.id.descr)
     var favoriteButton: ImageView = itemView.findViewById(R.id.favorite)
     var favoriteButtonListener: FavoriteButtonListener = FavoriteButtonListener()
-//    var stationClickListener: StationClickListener = StationClickListener()
 
     init {
         favoriteButton.setOnClickListener(favoriteButtonListener)
-//        itemView.setOnClickListener(stationClickListener)
     }
 
-//    class StationClickListener : View.OnClickListener {
-//        private var record: HashMap<String, String>? = null
-//
-//        override fun onClick(p0: View?) {
-//            val stationId = record?.get("id")
-//
-//
-//        }
-//    }
 
     class FavoriteButtonListener : View.OnClickListener {
         private var record: HashMap<String, String>? = null

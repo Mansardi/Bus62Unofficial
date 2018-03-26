@@ -1,15 +1,14 @@
-package transport.client.bus62unofficial.forecasts
+package transport.client.bus62unofficial.ui.adapters
 
 import android.app.Activity
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.ProgressBar
 import transport.client.bus62unofficial.R
 import transport.client.bus62unofficial.database.DBHelper
+import transport.client.bus62unofficial.ui.components.ForecastViewHolder
 import java.util.ArrayList
 import java.util.HashMap
 
@@ -41,7 +40,7 @@ class ForecastAdapter(activity: Activity, var data : ArrayList<HashMap<String, S
     }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ForecastViewHolder {
-        val v = LayoutInflater.from(parent!!.context).inflate(R.layout.detailed_list_row, parent, false)
+        val v = LayoutInflater.from(parent!!.context).inflate(R.layout.forecasts_row, parent, false)
         return ForecastViewHolder(v)
     }
 

@@ -1,16 +1,19 @@
 package transport.client.bus62unofficial
 
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.Fragment
 import android.os.Bundle
 import android.support.design.widget.BottomNavigationView
-import android.support.v7.app.AppCompatActivity
-import kotlinx.android.synthetic.main.activity_main.*
 import android.support.v4.view.MenuItemCompat
+import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.SearchView
 import android.view.Menu
+import android.view.MenuItem
+import kotlinx.android.synthetic.main.activity_main.*
 import transport.client.bus62unofficial.common.Searchable
-import transport.client.bus62unofficial.forecasts.ForecastFragment
-import transport.client.bus62unofficial.stations.StationsFragment
+import transport.client.bus62unofficial.ui.ForecastFragment
+import transport.client.bus62unofficial.ui.StationsFragment
 
 class MainActivity : AppCompatActivity(), StationsFragment.OnFragmentInteractionListener {
 
@@ -20,11 +23,21 @@ class MainActivity : AppCompatActivity(), StationsFragment.OnFragmentInteraction
 
         if (savedInstanceState == null) {
             val transaction = fragmentManager.beginTransaction()
-            transaction.replace(R.id.frame_layout, StationsFragment(), R.id.navigation_home.toString())
+            var mainScreen = getStringPref("main_screen")
+            when (mainScreen) {
+                R.id.navigation_home.toString(), "" -> {
+                    transaction.replace(R.id.frame_layout, StationsFragment(), mainScreen)
+                }
+                R.id.navigation_favorites.toString() -> {
+                    transaction.replace(R.id.frame_layout, StationsFragment(), mainScreen)
+                }
+                R.id.navigation_notifications.toString() -> {
+                    transaction.replace(R.id.frame_layout, StationsFragment(), mainScreen)
+                }
+            }
             transaction.commit()
         }
 
-        //actionBar.setDisplayHomeAsUpEnabled(true);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
     }
 
@@ -42,43 +55,43 @@ class MainActivity : AppCompatActivity(), StationsFragment.OnFragmentInteraction
             transaction.replace(R.id.frame_layout, forecastFragment)
             transaction.addToBackStack(null)
             transaction.commit()
+            supportActionBar!!.setDisplayHomeAsUpEnabled(true)
         }
     }
 
     private val mOnNavigationItemSelectedListener = BottomNavigationView.OnNavigationItemSelectedListener { item ->
-        var stationsFragment: Fragment? = null
+        var fragment: Fragment? = null
         val tag = item.itemId.toString()
         val transaction = fragmentManager.beginTransaction()
 
         when (item.itemId) {
             R.id.navigation_home -> {
-                stationsFragment = fragmentManager.findFragmentByTag(tag)
-                if (stationsFragment == null) {
-                    stationsFragment = StationsFragment()
-                    transaction.add(R.id.frame_layout, stationsFragment, tag)
+                fragment = fragmentManager.findFragmentByTag(tag)
+                if (fragment == null) {
+                    fragment = StationsFragment()
+                    transaction.add(R.id.frame_layout, fragment, tag)
                 }
             }
             R.id.navigation_favorites -> {
-                stationsFragment = fragmentManager.findFragmentByTag(tag)
-                if (stationsFragment == null) {
-                    stationsFragment = StationsFragment()
-                    transaction.add(R.id.frame_layout, stationsFragment, tag)
+                fragment = fragmentManager.findFragmentByTag(tag)
+                if (fragment == null) {
+                    fragment = StationsFragment()
+                    transaction.add(R.id.frame_layout, fragment, tag)
                 }
             }
             R.id.navigation_notifications -> {
-                stationsFragment = fragmentManager.findFragmentByTag(tag)
-                if (stationsFragment == null) {
-                    stationsFragment = StationsFragment()
-                    transaction.add(R.id.frame_layout, stationsFragment, tag)
+                fragment = fragmentManager.findFragmentByTag(tag)
+                if (fragment == null) {
+                    fragment = StationsFragment()
+                    transaction.add(R.id.frame_layout, fragment, tag)
                 }
             }
         }
 
-        if (stationsFragment == null)
+        if (fragment == null)
             return@OnNavigationItemSelectedListener false
 
-
-        transaction.show(stationsFragment)
+        transaction.show(fragment)
         transaction.commit()
         return@OnNavigationItemSelectedListener true
     }
@@ -95,7 +108,7 @@ class MainActivity : AppCompatActivity(), StationsFragment.OnFragmentInteraction
             override fun onQueryTextSubmit(query: String): Boolean {
                 searchViewAndroidActionBar.clearFocus()
 
-                var fragment = fragmentManager.findFragmentById(R.id.frame_layout) as Searchable
+                val fragment = fragmentManager.findFragmentById(R.id.frame_layout) as Searchable
                 fragment.applyFilter(query)
                 searchViewAndroidActionBar.tag = query
                 return true
@@ -103,20 +116,50 @@ class MainActivity : AppCompatActivity(), StationsFragment.OnFragmentInteraction
             }
 
             override fun onQueryTextChange(newText: String): Boolean {
-                if (newText.isEmpty() && searchViewAndroidActionBar.tag != null) {
-                    var fragment = fragmentManager.findFragmentById(R.id.frame_layout) as Searchable
-                    fragment.applyFilter("")
-                }
+                val fragment = fragmentManager.findFragmentById(R.id.frame_layout) as Searchable
+                fragment.applyFilter(newText)
+                searchViewAndroidActionBar.tag = newText
+//                if (newText.isEmpty() && searchViewAndroidActionBar.tag != null) {
+//                    val fragment = fragmentManager.findFragmentById(R.id.frame_layout) as Searchable
+//                    fragment.applyFilter("")
+//                }
                 return false
             }
         })
 
-        searchViewAndroidActionBar.setOnCloseListener(object: SearchView.OnCloseListener {
+        searchViewAndroidActionBar.setOnCloseListener(object : SearchView.OnCloseListener {
             override fun onClose(): Boolean {
-               return true
+                return true
             }
         })
 
         return super.onCreateOptionsMenu(menu)
+    }
+
+    @SuppressLint("ApplySharedPref")
+    private fun setStringPref(param: String, value: String) {
+        applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit().putString(param, value).commit()
+    }
+
+    private fun getStringPref(param: String): String {
+        return applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).getString(param, "").toString()
+    }
+
+    override fun onDestroy() {
+        setStringPref("main_screen", navigation.selectedItemId.toString())
+
+        super.onDestroy()
+    }
+
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        if (fragmentManager.backStackEntryCount > 0) {
+            fragmentManager.popBackStack()
+            supportActionBar!!.setDisplayHomeAsUpEnabled(true)
+        } else {
+            supportActionBar!!.setDisplayHomeAsUpEnabled(false)
+        }
+
+        return super.onOptionsItemSelected(item)
     }
 }

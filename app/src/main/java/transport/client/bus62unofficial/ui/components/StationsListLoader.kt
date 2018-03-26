@@ -1,19 +1,20 @@
-package transport.client.bus62unofficial.stations
+package transport.client.bus62unofficial.ui.components
 
 import android.app.Activity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import transport.client.bus62unofficial.ui.adapters.StationsAdapter
 import java.util.*
+import kotlin.collections.ArrayList
 
 
-abstract class StationsListLoader(private val activity: Activity, recyclerView: RecyclerView) {
+abstract class StationsListLoader(private val activity: Activity, private var items: ArrayList<HashMap<String, String>> = ArrayList()) {
     private var itemsPerPage: Int = 0
-    private var items: ArrayList<HashMap<String, String>> = ArrayList()
     private var loadingMore: Boolean = false
 
     private var adapter: RecyclerView.Adapter<*>? = null
 
-    private val scrollListener = object : RecyclerView.OnScrollListener() {
+    val scrollListener = object : RecyclerView.OnScrollListener() {
 
         override fun onScrollStateChanged(recyclerView: RecyclerView, scrollState: Int) {}
 
@@ -25,7 +26,7 @@ abstract class StationsListLoader(private val activity: Activity, recyclerView: 
             val totalItemCount = mLayoutManager.itemCount//сколько всего элементов
             val firstVisibleItem = mLayoutManager.findFirstVisibleItemPosition()//какая позиция первого элемента
             val lastInScreen = firstVisibleItem + visibleItemCount
-            if (lastInScreen == totalItemCount && !loadingMore) {
+            if (lastInScreen == totalItemCount || lastInScreen == totalItemCount - 5  && !loadingMore) {
                 loadItems()
             }
         }
@@ -44,9 +45,9 @@ abstract class StationsListLoader(private val activity: Activity, recyclerView: 
         loadingMore = false
     }
 
-    init {
-        recyclerView.setOnScrollListener(scrollListener)
-    }
+//    init {
+//        recyclerView.setOnScrollListener(scrollListener)
+//    }
 
     fun createAdapter() : RecyclerView.Adapter<*>? {
         adapter = StationsAdapter(activity, items)
@@ -62,9 +63,14 @@ abstract class StationsListLoader(private val activity: Activity, recyclerView: 
         itemsPerPage = value
     }
 
-    fun loadItems() {
+    private fun loadItems() {
         val thread = Thread(loadMoreListItemsRunnable)
         thread.start()
+    }
+
+    fun startLoadItems() {
+        if (items.count() > 0) return
+            loadItems()
     }
 
     /**
@@ -74,4 +80,12 @@ abstract class StationsListLoader(private val activity: Activity, recyclerView: 
      * @param itemsPerPage количество элементов на страницу (по умолчанию 10)
      */
     abstract fun onLoadItems(items: ArrayList<HashMap<String, String>>, itemsPerPage: Int)
+
+    fun getIndices(): ArrayList<Int> {
+        return items.indices.toCollection(java.util.ArrayList<Int>())
+    }
+
+    fun setItems(itemss: ArrayList<HashMap<String, String>>) {
+        this.items = itemss
+    }
 }
